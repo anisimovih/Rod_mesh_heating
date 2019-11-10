@@ -1,24 +1,24 @@
-﻿#include "pch.h"
+﻿#include "pch.h" // Предкомпилированные заголовки Visual Studio, по факту не нужны.
 #include <iostream>
 #include <iomanip>      // std::setw
+#include <vector>
 
 
 using namespace std;
 
-double *gauss(double **matrix, double *col, int n)
+
+vector<double> gauss(vector< vector<double> > matrix, vector<double> col, int n)
 {
-	double *x, **a, *y, max;
+	double max;
 	int k, index;
 	const double eps = 0.0000000000000001;  // точность
-	x = new double[n];
-	y = new double[n];
-	a = new double*[n];
+	vector<double> x(n);
+	vector<double> y(n);
+	vector< vector<double> > a(n, vector<double>(n));
 	k = 0;
-
 
 	for (int i = 0; i < n; i++)
 	{
-		a[i] = new double[n];
 		for (int j = 0; j < n; j++)
 		{
 			a[i][j] = matrix[i][j];
@@ -49,7 +49,7 @@ double *gauss(double **matrix, double *col, int n)
 			// нет ненулевых диагональных элементов
 			cout << "Решение получить невозможно из-за нулевого столбца ";
 			cout << index << " матрицы A" << endl;
-			return 0;
+			return x;
 		}
 		for (int j = 0; j < n; j++)
 		{
@@ -87,107 +87,83 @@ double *gauss(double **matrix, double *col, int n)
 }
 
 
-void init_horizontal(double ***z, double **y, double **new_temps, double **last_temsp, int number, int size, double ts, double r)
+void init_vertical(vector< vector<vector<double> > > &h_new_temps, vector< vector<double> > &v_known, double r, double tcu, double tcd)
 {
-	for (int i = 0; i < number; i++)
+	for (size_t i = 0; i < h_new_temps.size(); i++)
 	{
-		y[i] = new double[size];
-		z[i] = new double*[size];
-		last_temsp[i] = new double[size];
-		for (int j = 0; j < size; j++)
+		for (size_t j = 0; j < h_new_temps[0].size(); j++)
 		{
-			y[i][j] = ts;
+			if (j != 0)
+				h_new_temps[i][j][j - 1] = -r;
+			h_new_temps[i][j][j] = r * 2 + 1;
+			if (j != h_new_temps[0].size() - 1)
+				h_new_temps[i][j][j + 1] = -r;
+		}
 
-			z[i][j] = new double[size];
-			for (int k = 0; k < size; k++)
-			{
-				z[i][j][k] = 0;
-			}
+		v_known[i][0] += tcu * r; // Добавляем граничные условия
+		v_known[i][v_known[0].size() - 1] += tcd * r; // Добавляем граничные условия
+	}
+	
+}
 
-			z[i][j][j - 1] = -r;
-			z[i][j][j] = r * 2 + 1;
-			z[i][j][j + 1] = -r;
 
-			last_temsp[i][j] = ts;
+void init_horizontal(vector< vector<vector<double> > > &h_new_temps, vector< vector<double> > &v_known, double r)
+{
+	for (size_t i = 0; i < h_new_temps.size(); i++)
+	{
+		for (size_t j = 0; j < h_new_temps[0].size(); j++)
+		{
+			if (j != 0)
+				h_new_temps[i][j][j - 1] = -r;
+			h_new_temps[i][j][j] = r * 2 + 1;
+			if (j != h_new_temps[0].size() - 1)
+				h_new_temps[i][j][j + 1] = -r;
 		}
 
 		// Т.к. у боковых точек только 1 соседняя
-		z[i][0][0] = r + 1;
-		z[i][size - 1][size - 1] = r + 1;
-
-		new_temps[i] = new double[size];
+		h_new_temps[i][0][0] = r + 1;
+		h_new_temps[i][h_new_temps[0].size() - 1][h_new_temps[0].size() - 1] = r + 1;
 	}
 }
 
 
-void init_vertical(double ***z, double **y, double **new_temps, double **last_temsp, int number, int size, int tcu, int tcd, double ts, double r)
+void print_picture(vector< vector<double> > v_temps, vector< vector<double> > h_temps, vector<int> v_intersect, vector<int> h_intersect)
 {
-	for (int i = 0; i < number; i++)
+	for (size_t i = 0; i < v_temps[0].size(); i++) // столбцы
 	{
-		y[i] = new double[size];
-		z[i] = new double*[size];
-		last_temsp[i] = new double[size];
-		for (int j = 0; j < size; j++)
+		for (size_t j = 0; j < h_temps[0].size(); j++)  // строки
 		{
-			y[i][j] = ts;
-
-			z[i][j] = new double[size];
-			for (int k = 0; k < size; k++)
+			bool printed = false;
+			for (size_t k = 0; k < v_intersect.size(); k++)
 			{
-				z[i][j][k] = 0;
+				if (j == v_intersect[k])
+				{
+					cout << setw(10) << v_temps[k][i];
+					printed = true;
+					break;
+				}
 			}
-
-			z[i][j][j - 1] = -r;
-			z[i][j][j] = r * 2 + 1;
-			z[i][j][j + 1] = -r;
-
-			last_temsp[i][j] = ts;
-		}
-
-		y[i][0] += tcu * r; // Добавляем граничные условия
-		y[i][size - 1] += tcd * r; // Добавляем граничные условия
-
-		new_temps[i] = new double[size];
-	}
-}
-
-
-void print_picture(double **v_temps, double **h_temps, int v_len, int h_len, int v_num, int h_num, int *v_intersect, int *h_intersect)
-{
-	for (int i = 0; i < v_len; i++) // столбцы
-	{
-		for (int j = 0; j < h_len; j++)  // строки
-		{
-			// TODO: Нужно заменить нормальным циклом.
-			if (j == v_intersect[0])
-				cout << setw(10) << v_temps[0][i];
-			else if (j == v_intersect[1])
-				cout << setw(10) << v_temps[1][i];
-			else if (j == v_intersect[2])
-				cout << setw(10) << v_temps[2][i];
-			else if (j == v_intersect[3])
-				cout << setw(10) << v_temps[3][i];
-
-			else if (i == h_intersect[0])
-				cout << setw(10) << h_temps[0][j];
-			else if (i == h_intersect[1])
-				cout << setw(10) << h_temps[1][j];
-			else if (i == h_intersect[2])
-				cout << setw(10) << h_temps[2][j];
-			else if (i == h_intersect[3])
-				cout << setw(10) << h_temps[3][j];
-			else if (i == h_intersect[4])
-				cout << setw(10) << h_temps[4][j];
-			else
+			if (printed == false)
+			{
+				for (size_t k = 0; k < h_intersect.size(); k++)
+				{
+					if (i == h_intersect[k])
+					{
+						cout << setw(10) << h_temps[k][j];
+						printed = true;
+						break;
+					}
+				}
+			}
+			if (printed == false)
 				cout << setw(10) << " ";
 		}
 		cout << endl;
 	}
-	cout << endl << endl;
 }
 
 
-void update_known_temps(double *known, double *last_temps, double *new_temps, int length)
+void update_known_temps(vector<double> &known, vector<double> &last_temps, vector<double> new_temps, int length)
 {
 	for (int i = 0; i < length; i++)
 	{
@@ -197,14 +173,17 @@ void update_known_temps(double *known, double *last_temps, double *new_temps, in
 	}
 }
 
-void disconnect_points(int *v_intersect, int *h_intersect, int **new_points, int *non_intersecting_points, int non_intersecting_points_num, int v_num, int h_num)
+void disconnect_points(vector<int> v_intersect, vector<int> h_intersect, vector< vector<int> > &intersect_array, vector<int> non_intersecting_points)
 {
+	int h_num = h_intersect.size();
+	int v_num = v_intersect.size();
+	int non_intersecting_points_num = non_intersecting_points.size();
+
 	for (int j = 0; j < h_num; j++)
 	{
 		for (int i = 0; i < v_num; i++)
 		{
 			bool non_intersect = false;
-			new_points[i + j * v_num] = new int[2];
 			for (int k = 0; k < non_intersecting_points_num; k++)
 			{
 				if (i + j * v_num == non_intersecting_points[k] - 1)
@@ -212,62 +191,17 @@ void disconnect_points(int *v_intersect, int *h_intersect, int **new_points, int
 			}
 			if (non_intersect == false)
 			{
-				new_points[i + j * v_num][0] = h_intersect[j];
-				new_points[i + j * v_num][1] = v_intersect[i];
+				intersect_array[i + j * v_num][0] = h_intersect[j];
+				intersect_array[i + j * v_num][1] = v_intersect[i];
 			}
 			else
 			{
-				new_points[i + j * v_num][0] = -1;
-				new_points[i + j * v_num][1] = -1;
+				intersect_array[i + j * v_num][0] = -1;
+				intersect_array[i + j * v_num][1] = -1;
 			}
 		}
 	}
 }
-
-void delete_2d(double **array, int len)
-{
-	for (int i = 0; i < len; i++)
-	{
-		delete[] array[i];
-	}
-	delete[] array;
-}
-
-void delete_3d(double ***array, int len)
-{
-	for (int i = 0; i < len; i++)
-	{
-		for (int j = 0; j < len; j++)
-		{
-			delete[] array[i][j];
-		}
-		delete[] array[i];
-	}
-	delete[] array;
-}
-
-
-
-void memory_cleaning(double **h_new_temps, double **h_last_temps, double **h_known, double ***h_unknown, double **v_new_temps, double **v_last_temps, double **v_known, double ***v_unknown, int *v_intersect, int *h_intersect, int **intersect_2, int *non_intersecting_points, int h_num, int v_num)
-{
-	delete_2d(h_new_temps, h_num);
-	delete_2d(h_last_temps, h_num);
-	delete_2d(h_known, h_num);
-	delete_3d(h_unknown, h_num);
-	delete_2d(v_new_temps, h_num);
-	delete_2d(v_last_temps, h_num);
-	delete_2d(v_known, h_num);
-	delete_3d(v_unknown, h_num);
-	delete[] v_intersect;
-	delete[] h_intersect;
-	for (int i = 0; i < v_num * h_num; i++)
-	{
-		delete[] intersect_2[i];
-	}
-	delete[] intersect_2;
-	delete[] non_intersecting_points;
-}
-
 
 
 int main()
@@ -275,23 +209,6 @@ int main()
 	setlocale(LC_ALL, "Russian");
 	int v_len = 17, h_len = 13; // Число шагов у вертикальных и горионтальных стержней
 	int v_num = 4, h_num = 5; // Число вертикальных и горионтальных стержней
-	double **h_new_temps = new double*[h_num];  // Температуры в точках горизонтальных стержней
-	double **h_last_temps = new double*[h_num];  // Предыдущие температуры в точках горизонтальных стержней
-	double **h_known = new double*[h_num];  // Известные данные горизонтальных стержней
-	double ***h_unknown = new double**[h_num];  // Матрицы горизонтальных стержней
-
-	double **v_new_temps = new double*[v_num];  // Температуры в точках горизонтальных стержней
-	double **v_last_temps = new double*[v_num];  // Предыдущие температуры в точках горизонтальных стержней
-	double **v_known = new double*[v_num];  // Известные данные горизонтальных стержней
-	double ***v_unknown = new double**[v_num];  // Матрицы горизонтальных стержней
-
-	int *v_intersect = new int[v_num] {2, 5, 7, 10}; // Координаты вертикальных сержней
-	int *h_intersect = new int[h_num] {2, 5, 8, 11, 14}; // Координаты горизонтальных сержней
-
-	int **intersect_2 = new int*[v_num * h_num]; // Пересечения стержней
-	int non_intersecting_points_num = 4; // В данных точках пересечение выключено (Отсчет идет от 1, слева направо, сверху вниз, то есть как буквы в книге).
-	int *non_intersecting_points = new int[non_intersecting_points_num] { 1, 5, 9, 13 };
-
 	//double at = 0.00008418; // Коэффициент температуропроводности (Алюминий)
 	double at = 0.000111; // Коэффициент температуропроводности (Медь)
 	double dt = 0.001; // Шаг по времени
@@ -304,10 +221,26 @@ int main()
 	double tcd = 100; // Температура снизу.
 	double ts = 10; // Изначальная температура системы.
 
-	init_vertical(v_unknown, v_known, v_new_temps, v_last_temps, v_num, v_len, tcu, tcd, ts, r); // Инициализация матриц вертикальных стержней
-	init_horizontal(h_unknown, h_known, h_new_temps, h_last_temps, h_num, h_len, ts, r); // Инициализация матриц горизонтальных стержней
+	vector< vector<vector<double> > > h_unknown(h_num, vector< vector<double> >(h_len, vector<double>(h_len, 0)));  // Матрицы горизонтальных стержней
+	vector< vector<double> > h_last_temps(h_num, vector<double>(h_len, ts));  // Предыдущие температуры в точках горизонтальных стержней
+	vector< vector<double> > h_known(h_num, vector<double>(h_len, ts));  // Известные данные горизонтальных стержней
+	vector< vector<double> > h_new_temps(h_num, vector<double>(h_len));  // Температуры в точках горизонтальных стержней
 
-	disconnect_points(v_intersect, h_intersect, intersect_2, non_intersecting_points, non_intersecting_points_num, v_num, h_num);
+	vector< vector<vector<double> > > v_unknown(v_num, vector< vector<double> >(v_len, vector<double>(v_len, 0)));  // Матрицы горизонтальных стержней
+	vector< vector<double> > v_last_temps(v_num, vector<double>(v_len, ts));  // Предыдущие температуры в точках горизонтальных стержней
+	vector< vector<double> > v_known(v_num, vector<double>(v_len, ts));  // Известные данные горизонтальных стержней
+	vector< vector<double> > v_new_temps(v_num, vector<double>(v_len));  // Температуры в точках горизонтальных стержней
+
+	vector<int> v_intersect{ 2, 5, 7, 10 }; // Координаты вертикальных сержней
+	vector<int> h_intersect{ 2, 5, 8, 11, 14 }; // Координаты горизонтальных сержней
+
+	vector< vector<int> > intersect_2(v_num * h_num, vector<int>(2)); // Пересечения стержней
+	vector<int> non_intersecting_points_v{ 1, 5, 9, 13 }; // В данных точках пересечение выключено (Отсчет идет от 1, слева направо, сверху вниз, то есть как буквы в книге).
+
+	init_vertical(v_unknown, v_known, r, tcu, tcd); // Инициализация матриц вертикальных стержней
+	init_horizontal(h_unknown, h_known, r); // Инициализация матриц горизонтальных стержней
+
+	disconnect_points(v_intersect, h_intersect, intersect_2, non_intersecting_points_v);
 
 	// Рассчет значений
 	for (int i = 0; i < steps_num; i++)
@@ -324,7 +257,9 @@ int main()
 			for (int k = 0; k < v_num; k++)
 			{
 				if (intersect_2[k + j * v_num][0] != -1)
+				{
 					h_known[j][intersect_2[k + j * v_num][1]] = v_new_temps[k][intersect_2[k + j * v_num][0]];
+				}
 			}
 		}
 
@@ -340,7 +275,9 @@ int main()
 			for (int k = 0; k < v_num; k++)
 			{
 				if (intersect_2[k + j * v_num][0] != -1)
+				{
 					v_new_temps[k][intersect_2[k + j * v_num][0]] = h_new_temps[j][intersect_2[k + j * v_num][1]];
+				}
 			}
 		}
 
@@ -360,9 +297,7 @@ int main()
 		//print_picture(v_new_temps, h_new_temps, v_len, h_len, v_num, h_num, v_intersect, h_intersect);
 	}
 
-	print_picture(v_new_temps, h_new_temps, v_len, h_len, v_num, h_num, v_intersect, h_intersect);
-
-	memory_cleaning(h_new_temps, h_last_temps, h_known, h_unknown, v_new_temps, v_last_temps, v_known, v_unknown, v_intersect, h_intersect, intersect_2, non_intersecting_points, h_num, v_num);
-
+	print_picture(v_new_temps, h_new_temps, v_intersect, h_intersect);
+	
 	return 0;
 }
