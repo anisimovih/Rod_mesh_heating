@@ -152,31 +152,31 @@ void init_vertical(double ***z, double **y, double **new_temps, double **last_te
 }
 
 
-void print_picture(double **v_temps, double **h_temps, int v_len, int h_len, int v_num, int h_num, int intersect[2][5])
+void print_picture(double **v_temps, double **h_temps, int v_len, int h_len, int v_num, int h_num, int *v_intersect, int *h_intersect)
 {
 	for (int i = 0; i < v_len; i++) // столбцы
 	{
 		for (int j = 0; j < h_len; j++)  // строки
 		{
 			// TODO: Нужно заменить нормальным циклом.
-			if (j == intersect[0][0])
+			if (j == v_intersect[0])
 				cout << setw(10) << v_temps[0][i];
-			else if (j == intersect[0][1])
+			else if (j == v_intersect[1])
 				cout << setw(10) << v_temps[1][i];
-			else if (j == intersect[0][2])
+			else if (j == v_intersect[2])
 				cout << setw(10) << v_temps[2][i];
-			else if (j == intersect[0][3])
+			else if (j == v_intersect[3])
 				cout << setw(10) << v_temps[3][i];
 
-			else if (i == intersect[1][0])
+			else if (i == h_intersect[0])
 				cout << setw(10) << h_temps[0][j];
-			else if (i == intersect[1][1])
+			else if (i == h_intersect[1])
 				cout << setw(10) << h_temps[1][j];
-			else if (i == intersect[1][2])
+			else if (i == h_intersect[2])
 				cout << setw(10) << h_temps[2][j];
-			else if (i == intersect[1][3])
+			else if (i == h_intersect[3])
 				cout << setw(10) << h_temps[3][j];
-			else if (i == intersect[1][4])
+			else if (i == h_intersect[4])
 				cout << setw(10) << h_temps[4][j];
 			else
 				cout << setw(10) << " ";
@@ -197,6 +197,78 @@ void update_known_temps(double *known, double *last_temps, double *new_temps, in
 	}
 }
 
+void disconnect_points(int *v_intersect, int *h_intersect, int **new_points, int *non_intersecting_points, int non_intersecting_points_num, int v_num, int h_num)
+{
+	for (int j = 0; j < h_num; j++)
+	{
+		for (int i = 0; i < v_num; i++)
+		{
+			bool non_intersect = false;
+			new_points[i + j * v_num] = new int[2];
+			for (int k = 0; k < non_intersecting_points_num; k++)
+			{
+				if (i + j * v_num == non_intersecting_points[k] - 1)
+					non_intersect = true;
+			}
+			if (non_intersect == false)
+			{
+				new_points[i + j * v_num][0] = h_intersect[j];
+				new_points[i + j * v_num][1] = v_intersect[i];
+			}
+			else
+			{
+				new_points[i + j * v_num][0] = -1;
+				new_points[i + j * v_num][1] = -1;
+			}
+		}
+	}
+}
+
+void delete_2d(double **array, int len)
+{
+	for (int i = 0; i < len; i++)
+	{
+		delete[] array[i];
+	}
+	delete[] array;
+}
+
+void delete_3d(double ***array, int len)
+{
+	for (int i = 0; i < len; i++)
+	{
+		for (int j = 0; j < len; j++)
+		{
+			delete[] array[i][j];
+		}
+		delete[] array[i];
+	}
+	delete[] array;
+}
+
+
+
+void memory_cleaning(double **h_new_temps, double **h_last_temps, double **h_known, double ***h_unknown, double **v_new_temps, double **v_last_temps, double **v_known, double ***v_unknown, int *v_intersect, int *h_intersect, int **intersect_2, int *non_intersecting_points, int h_num, int v_num)
+{
+	delete_2d(h_new_temps, h_num);
+	delete_2d(h_last_temps, h_num);
+	delete_2d(h_known, h_num);
+	delete_3d(h_unknown, h_num);
+	delete_2d(v_new_temps, h_num);
+	delete_2d(v_last_temps, h_num);
+	delete_2d(v_known, h_num);
+	delete_3d(v_unknown, h_num);
+	delete[] v_intersect;
+	delete[] h_intersect;
+	for (int i = 0; i < v_num * h_num; i++)
+	{
+		delete[] intersect_2[i];
+	}
+	delete[] intersect_2;
+	delete[] non_intersecting_points;
+}
+
+
 
 int main()
 {
@@ -213,19 +285,20 @@ int main()
 	double **v_known = new double*[v_num];  // Известные данные горизонтальных стержней
 	double ***v_unknown = new double**[v_num];  // Матрицы горизонтальных стержней
 
-	//Точки пересечения стержней
-	int intersect[2][5] = {
-		{2, 5, 7, 10, 0},// горизонталь
-		{2, 5, 8, 11, 14} // вертикаль
-	};
+	int *v_intersect = new int[v_num] {2, 5, 7, 10}; // Координаты вертикальных сержней
+	int *h_intersect = new int[h_num] {2, 5, 8, 11, 14}; // Координаты горизонтальных сержней
+
+	int **intersect_2 = new int*[v_num * h_num]; // Пересечения стержней
+	int non_intersecting_points_num = 4; // В данных точках пересечение выключено (Отсчет идет от 1, слева направо, сверху вниз, то есть как буквы в книге).
+	int *non_intersecting_points = new int[non_intersecting_points_num] { 1, 5, 9, 13 };
 
 	//double at = 0.00008418; // Коэффициент температуропроводности (Алюминий)
 	double at = 0.000111; // Коэффициент температуропроводности (Медь)
 	double dt = 0.001; // Шаг по времени
 	double lambda = 0.001; // Шаг по стержню
-	double r = at * dt / lambda / lambda; // Результирующий коэффициент
+	//double r = at * dt / lambda / lambda; // Результирующий коэффициент
 	//double r = 0.000001; // Минимальный коэффициент, влияющий на результат
-	//double r = 1;
+	double r = 0.5;
 	int steps_num = 50; // Число шагов вычислений.
 	double tcu = 100; // Температура сверху.
 	double tcd = 100; // Температура снизу.
@@ -233,6 +306,8 @@ int main()
 
 	init_vertical(v_unknown, v_known, v_new_temps, v_last_temps, v_num, v_len, tcu, tcd, ts, r); // Инициализация матриц вертикальных стержней
 	init_horizontal(h_unknown, h_known, h_new_temps, h_last_temps, h_num, h_len, ts, r); // Инициализация матриц горизонтальных стержней
+
+	disconnect_points(v_intersect, h_intersect, intersect_2, non_intersecting_points, non_intersecting_points_num, v_num, h_num);
 
 	// Рассчет значений
 	for (int i = 0; i < steps_num; i++)
@@ -244,11 +319,12 @@ int main()
 		}
 
 		// Перисвоение новых значений горизонтальным стержням(в точках пересечения).
-		for (int k = 0; k < h_num; k++)
+		for (int j = 0; j < h_num; j++)
 		{
-			for (int j = 0; j < v_num; j++)
+			for (int k = 0; k < v_num; k++)
 			{
-				h_known[k][intersect[0][j]] = v_new_temps[j][intersect[1][k]];
+				if (intersect_2[k + j * v_num][0] != -1)
+					h_known[j][intersect_2[k + j * v_num][1]] = v_new_temps[k][intersect_2[k + j * v_num][0]];
 			}
 		}
 
@@ -259,11 +335,12 @@ int main()
 		}
 
 		// Перисвоение новых значений вертикальным стержням(в точках пересечения).
-		for (int k = 0; k < v_num; k++)
+		for (int j = 0; j < h_num; j++)
 		{
-			for (int j = 0; j < h_num; j++)
+			for (int k = 0; k < v_num; k++)
 			{
-				v_new_temps[k][intersect[1][j]] = h_new_temps[j][intersect[0][k]];
+				if (intersect_2[k + j * v_num][0] != -1)
+					v_new_temps[k][intersect_2[k + j * v_num][0]] = h_new_temps[j][intersect_2[k + j * v_num][1]];
 			}
 		}
 
@@ -280,10 +357,12 @@ int main()
 		}
 
 		// Отрисвока картинки на каждом шаге.
-		//print_picture(v_new_temps, h_new_temps, v_len, h_len, v_num, h_num, intersect);
+		//print_picture(v_new_temps, h_new_temps, v_len, h_len, v_num, h_num, v_intersect, h_intersect);
 	}
 
-	print_picture(v_new_temps, h_new_temps, v_len, h_len, v_num, h_num, intersect);
+	print_picture(v_new_temps, h_new_temps, v_len, h_len, v_num, h_num, v_intersect, h_intersect);
+
+	memory_cleaning(h_new_temps, h_last_temps, h_known, h_unknown, v_new_temps, v_last_temps, v_known, v_unknown, v_intersect, h_intersect, intersect_2, non_intersecting_points, h_num, v_num);
 
 	return 0;
 }
