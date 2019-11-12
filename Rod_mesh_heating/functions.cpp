@@ -1,5 +1,4 @@
-#include "pch.h"
-#include "functions.h"
+п»ї#include "functions.h"
 #include <iostream>
 #include <iomanip>      // std::setw
 #include <vector>
@@ -13,7 +12,7 @@ vector<double> gauss(vector< vector<double> > matrix, vector<double> col, int n)
 {
 	double max;
 	int k, index;
-	const double eps = 0.0000000000000001;  // точность
+	const double eps = 0.0000000000000001;  // С‚РѕС‡РЅРѕСЃС‚СЊ
 	vector<double> x(n);
 	vector<double> y(n);
 	vector< vector<double> > a(n, vector<double>(n));
@@ -34,7 +33,7 @@ vector<double> gauss(vector< vector<double> > matrix, vector<double> col, int n)
 
 	while (k < n)
 	{
-		// Поиск строки с максимальным a[i][k]
+		// РџРѕРёСЃРє СЃС‚СЂРѕРєРё СЃ РјР°РєСЃРёРјР°Р»СЊРЅС‹Рј a[i][k]
 		max = abs(a[k][k]);
 		index = k;
 		for (int i = k + 1; i < n; i++)
@@ -45,12 +44,12 @@ vector<double> gauss(vector< vector<double> > matrix, vector<double> col, int n)
 				index = i;
 			}
 		}
-		// Перестановка строк
+		// РџРµСЂРµСЃС‚Р°РЅРѕРІРєР° СЃС‚СЂРѕРє
 		if (max < eps)
 		{
-			// нет ненулевых диагональных элементов
-			cout << "Решение получить невозможно из-за нулевого столбца ";
-			cout << index << " матрицы A" << endl;
+			// РЅРµС‚ РЅРµРЅСѓР»РµРІС‹С… РґРёР°РіРѕРЅР°Р»СЊРЅС‹С… СЌР»РµРјРµРЅС‚РѕРІ
+			cout << "Р РµС€РµРЅРёРµ РїРѕР»СѓС‡РёС‚СЊ РЅРµРІРѕР·РјРѕР¶РЅРѕ РёР·-Р·Р° РЅСѓР»РµРІРѕРіРѕ СЃС‚РѕР»Р±С†Р° ";
+			cout << index << " РјР°С‚СЂРёС†С‹ A" << endl;
 			return x;
 		}
 		for (int j = 0; j < n; j++)
@@ -62,22 +61,22 @@ vector<double> gauss(vector< vector<double> > matrix, vector<double> col, int n)
 		double temp = y[k];
 		y[k] = y[index];
 		y[index] = temp;
-		// Нормализация уравнений
+		// РќРѕСЂРјР°Р»РёР·Р°С†РёСЏ СѓСЂР°РІРЅРµРЅРёР№
 		for (int i = k; i < n; i++)
 		{
 			double temp = a[i][k];
-			if (abs(temp) < eps) continue; // для нулевого коэффициента пропустить
+			if (abs(temp) < eps) continue; // РґР»СЏ РЅСѓР»РµРІРѕРіРѕ РєРѕСЌС„С„РёС†РёРµРЅС‚Р° РїСЂРѕРїСѓСЃС‚РёС‚СЊ
 			for (int j = 0; j < n; j++)
 				a[i][j] = a[i][j] / temp;
 			y[i] = y[i] / temp;
-			if (i == k)  continue; // уравнение не вычитать само из себя
+			if (i == k)  continue; // СѓСЂР°РІРЅРµРЅРёРµ РЅРµ РІС‹С‡РёС‚Р°С‚СЊ СЃР°РјРѕ РёР· СЃРµР±СЏ
 			for (int j = 0; j < n; j++)
 				a[i][j] = a[i][j] - a[k][j];
 			y[i] = y[i] - y[k];
 		}
 		k++;
 	}
-	// обратная подстановка
+	// РѕР±СЂР°С‚РЅР°СЏ РїРѕРґСЃС‚Р°РЅРѕРІРєР°
 	for (k = n - 1; k >= 0; k--)
 	{
 		x[k] = y[k];
@@ -101,10 +100,9 @@ void init_vertical(vector< vector<vector<double> > > &h_new_temps, vector< vecto
 				h_new_temps[i][j][j + 1] = -r;
 		}
 
-		v_known[i][0] += tcu * r; // Добавляем граничные условия
-		v_known[i][v_known[0].size() - 1] += tcd * r; // Добавляем граничные условия
+		v_known[i][0] += tcu * r; // Р”РѕР±Р°РІР»СЏРµРј РіСЂР°РЅРёС‡РЅС‹Рµ СѓСЃР»РѕРІРёСЏ
+		v_known[i][v_known[0].size() - 1] += tcd * r; // Р”РѕР±Р°РІР»СЏРµРј РіСЂР°РЅРёС‡РЅС‹Рµ СѓСЃР»РѕРІРёСЏ
 	}
-
 }
 
 void init_horizontal(vector< vector<vector<double> > > &h_new_temps, vector< vector<double> > &v_known, double r)
@@ -120,7 +118,7 @@ void init_horizontal(vector< vector<vector<double> > > &h_new_temps, vector< vec
 				h_new_temps[i][j][j + 1] = -r;
 		}
 
-		// Т.к. у боковых точек только 1 соседняя
+		// Рў.Рє. Сѓ Р±РѕРєРѕРІС‹С… С‚РѕС‡РµРє С‚РѕР»СЊРєРѕ 1 СЃРѕСЃРµРґРЅСЏСЏ
 		h_new_temps[i][0][0] = r + 1;
 		h_new_temps[i][h_new_temps[0].size() - 1][h_new_temps[0].size() - 1] = r + 1;
 	}
@@ -128,9 +126,9 @@ void init_horizontal(vector< vector<vector<double> > > &h_new_temps, vector< vec
 
 void print_picture(vector< vector<double> > v_temps, vector< vector<double> > h_temps, vector<int> v_intersect, vector<int> h_intersect)
 {
-	for (size_t i = 0; i < v_temps[0].size(); i++) // столбцы
+	for (size_t i = 0; i < v_temps[0].size(); i++) // СЃС‚РѕР»Р±С†С‹
 	{
-		for (size_t j = 0; j < h_temps[0].size(); j++)  // строки
+		for (size_t j = 0; j < h_temps[0].size(); j++)  // СЃС‚СЂРѕРєРё
 		{
 			bool printed = false;
 			for (size_t k = 0; k < v_intersect.size(); k++)

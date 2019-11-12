@@ -1,4 +1,4 @@
-#ifndef FUNCTION_H_INCLUDED_
+﻿#ifndef FUNCTION_H_INCLUDED_
 #define FUNCTION_H_INCLUDED_
 #include <vector>
 using std::vector;

@@ -1,8 +1,9 @@
-﻿#include "pch.h" // Предкомпилированные заголовки Visual Studio, по факту не нужны.
-#include <iostream>
+﻿#include <iostream>
 #include <vector>
 #include "functions.h" 
 using std::vector;
+using std::cout;
+using std::endl;
 
 
 int main()
@@ -51,30 +52,33 @@ int main()
 		{
 			v_new_temps[j] = gauss(v_unknown[j], v_known[j], v_len);
 		}
-
+		// Перисвоение новых значений горизонтальным стержням(в точках пересечения).
 		for (int j = 0; j < h_num; j++)
 		{
 			for (int k = 0; k < v_num; k++)
 			{
 				if (intersect_2[k + j * v_num][0] != -1)
 				{
-					// Перисвоение новых значений горизонтальным стержням(в точках пересечения).
 					h_known[j][intersect_2[k + j * v_num][1]] = v_new_temps[k][intersect_2[k + j * v_num][0]];
 				}
 			}
+		}
 
-			// Рассчет температур горизонтальных стержней.
+		// Рассчет температур горизонтальных стержней.
+		for (int j = 0; j < h_num; j++)
+		{
 			h_new_temps[j] = gauss(h_unknown[j], h_known[j], h_len);
+		}
+		// Перисвоение новых значений вертикальным стержням(в точках пересечения).
+		for (int j = 0; j < h_num; j++)
+		{
 			for (int k = 0; k < v_num; k++)
 			{
 				if (intersect_2[k + j * v_num][0] != -1)
 				{
-					// Перисвоение новых значений вертикальным стержням(в точках пересечения).
 					v_new_temps[k][intersect_2[k + j * v_num][0]] = h_new_temps[j][intersect_2[k + j * v_num][1]];
 				}
 			}
-			// Обновление известных значений горизонтальных стержней.
-			update_known_temps(h_known[j], h_last_temps[j], h_new_temps[j], h_len);
 		}
 
 		// Обновление известных значений горизонтальных стержней.
@@ -82,7 +86,11 @@ int main()
 		{
 			update_known_temps(v_known[j], v_last_temps[j], v_new_temps[j], v_len);
 		}
-
+		// Обновление известных значений горизонтальных стержней.
+		for (int j = 0; j < h_num; j++)
+		{
+			update_known_temps(h_known[j], h_last_temps[j], h_new_temps[j], h_len);
+		}
 		// Отрисвока картинки на каждом шаге.
 		//print_picture(v_new_temps, h_new_temps, v_len, h_len, v_num, h_num, v_intersect, h_intersect);
 	}
