@@ -1,8 +1,4 @@
-﻿// Politech_project.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-
-//#include "pch.h"
-#include "./example/Rod_mesh_heating.h"
+﻿#include "./example/Rod_mesh_heating.h"
 #include <iostream>
 using std::map;
 using std::string;
@@ -27,7 +23,7 @@ int main()
 	{
 		test->nextStep();
 	}
-	//test->print_picture();  // Отрисовка картинки в консоли.
+	// test->print_picture();  // Отрисовка картинки в консоли.
 	test->getPoints();
 	test->getTime();
 }
