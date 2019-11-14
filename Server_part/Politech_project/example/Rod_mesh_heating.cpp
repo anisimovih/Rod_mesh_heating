@@ -24,44 +24,24 @@ RodMeshHeating::~RodMeshHeating(){
 
 map<string, Point> RodMeshHeating::getPoints(){
     result.clear();
-	vector< vector<double> > data(v_len, vector<double>(h_len, 0));
-
-	// Формирование данных.
-	for (size_t i = 0; i < v_new_temps[0].size(); i++) // столбцы
+	
+	for (int j = 0; j < v_num; j++)
 	{
-		for (size_t j = 0; j < h_new_temps[0].size(); j++)  // строки
+		for (int i = 0; i < v_len; i++)
 		{
-			bool printed = false;
-			for (size_t k = 0; k < v_intersect.size(); k++)
-			{
-				if (j == v_intersect[k])
-				{
-					data[i][j] = v_new_temps[k][i];
-					printed = true;
-					break;
-				}
-			}
-			if (printed == false)
-			{
-				for (size_t k = 0; k < h_intersect.size(); k++)
-				{
-					if (i == h_intersect[k])
-					{
-						data[i][j] = h_new_temps[k][j];
-						printed = true;
-						break;
-					}
-				}
-			}
+			Point point(v_intersect[j] * dX, i * dX, v_new_temps[j][i]);
+			result.insert(pair<string, Point>(to_string(v_intersect[j] * dX) + to_string(i * dX), point));
 		}
 	}
 
-	// Формирование контейнера с данными.
-	for (int i = 0; i < v_len; i++)
-		for (int j = 0; j < h_len; j++) {
-			Point point(j * dX, i * dX, data[i][j]);
-			result.insert(pair<string, Point>(to_string(j * dX) + to_string(i * dX), point));
+	for (int j = 0; j < h_num; j++)
+	{
+		for (int i = 0; i < h_len; i++)
+		{
+			Point point(i * dX, h_intersect[j] * dX, h_new_temps[j][i]);
+			result.insert(pair<string, Point>(to_string(i * dX) + to_string(h_intersect[j] * dX), point));
 		}
+	}
 
     return result;
 }
