@@ -6,29 +6,35 @@ using std::vector;
 using std::string;
 using std::map;
 
-class RodMeshHeating : public Task{
+class RodMeshHeating : public Task {
 public:
 	RodMeshHeating();
-    ~RodMeshHeating();
-    void parseParam(map<string,string> mapParam);
-    double getTime();
-    map<string, Point> getPoints();
-    void nextStep();
+	~RodMeshHeating();
+	void parseParam(map<string, string> mapParam);
+	double getTime();
+	map<string, Point> getPoints();
+	void nextStep();
 
 	void print_picture(); // Временный метод для дебага, потом нужно убрать.
 
 
 private:
 	double t;  // Суммарное время
-	double dX; // Шаг по стержню
+	double dX; // Шаг по стержнюa
 	int v_len, h_len;  // Число шагов у вертикальных и горионтальных стержней
 	int v_num, h_num;  // Число вертикальных и горионтальных стержней
-	double at;  // Коэффициент температуропроводности (Медь)
+	double at_v, at_h;  // Коэффициент температуропроводности
 	double dt;  // Шаг по времени
-	double r;  // Результирующий коэффициент (at*dt/dX^2)
-	double Tcu; // Температура сверху.
-	double Tcd; // Температура снизу.
-	double Ts; // Изначальная температура системы.
+	double r_v, r_h;  // Результирующий коэффициент (at*dt/dX^2)
+	double Tcu;  // Температура сверху.
+	double Tcd;  // Температура снизу.
+	double Ts;  // Изначальная температура системы.
+	double Tm;  // Температура плавления.
+	double Lp;  // Мощность лампочки.
+	double radius_v, radius_h;  // Радиус стержня.
+	double density_v, density_h;  // Плотность стержня.
+	double specific_heat_v, specific_heat_h;  // Удельная теплоемкость стержня.
+	double absorption_coefficient_v, absorption_coefficient_h; // Коэффициент поглащения стержня.
 	vector<int> non_intersecting_points; // В данных точках пересечение выключено (Отсчет идет от 1, слева направо, сверху вниз, то есть как буквы в книге).
 	map<string, Point> result;  // Контейнер с данными, для отправки клиентскому приложению.
 	vector<int> v_intersect{}; // Координаты вертикальных сержней
@@ -45,10 +51,12 @@ private:
 
 
 	vector<int> strToVec(string str);
+	void initial_values_calc();
 	vector<double> gauss(vector< vector<double> > matrix, vector<double> col, int n);
 	void init_vertical();
 	void init_horizontal();
 	void update_known_temps(vector<double> &known, vector<double> &last_temps, vector<double> new_temps, int length);
 	void disconnect_points();
+	void lamp();
 };
 
