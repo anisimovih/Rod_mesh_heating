@@ -12,6 +12,7 @@ using std::endl;
 using std::stod;
 using std::setw;
 using std::vector;
+using std::abs;
 
 
 RodMeshHeating::RodMeshHeating() :Task() {
