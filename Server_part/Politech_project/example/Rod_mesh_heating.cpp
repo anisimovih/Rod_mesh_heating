@@ -8,7 +8,7 @@ using std::cout;
 using std::endl;
 using std::stod;
 using std::setw;
-
+using std::abs;
 
 
 RodMeshHeating::RodMeshHeating() :Task() {
