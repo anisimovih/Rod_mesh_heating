@@ -152,18 +152,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="example\Rod_mesh_heating.h" />
-    <ClInclude Include="pch.h" />
     <ClInclude Include="Point.h" />
     <ClInclude Include="Task.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Client_requests_imitation.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="example\Rod_mesh_heating.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Point.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="Client_requests_Imitation..cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
   </ItemGroup>

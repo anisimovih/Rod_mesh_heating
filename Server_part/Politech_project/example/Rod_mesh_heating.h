@@ -1,8 +1,10 @@
 ﻿#pragma once
 #include <vector>
+#include <deque>
 #include "../Task.h"
 #include "../Point.h"
 using std::vector;
+using std::deque;
 using std::string;
 using std::map;
 
@@ -29,6 +31,7 @@ private:
 	double Tcu;  // Температура сверху.
 	double Tcd;  // Температура снизу.
 	double Ts;  // Изначальная температура системы.
+	double T_error;  // Погрешность на концах горионтальных стержней.
 	double Tm;  // Температура плавления.
 	double Lp;  // Мощность лампочки.
 	double radius_v, radius_h;  // Радиус стержня.
@@ -40,9 +43,9 @@ private:
 	vector<int> v_intersect{}; // Координаты вертикальных сержней
 	vector<int> h_intersect{}; // Координаты горизонтальных сержней
 	vector< vector<int> > intersect_2; // Координаты пересеченйи стержней
-	vector< vector<vector<double> > > h_unknown;  // Матрицы горизонтальных стержней
+	vector< deque<deque<double> > > h_unknown;  // Матрицы горизонтальных стержней
 	vector< vector<double> > h_last_temps;  // Предыдущие температуры в точках горизонтальных стержней
-	vector< vector<double> > h_known;  // Известные данные горизонтальных стержней
+	vector< deque<double> > h_known;  // Известные данные горизонтальных стержней
 	vector< vector<double> > h_new_temps;  // Новые значения температур в точках горизонтальных стержней
 	vector< vector<vector<double> > > v_unknown;  // Матрицы горизонтальных стержней
 	vector< vector<double> > v_last_temps;  // Предыдущие температуры в точках горизонтальных стержней
@@ -52,10 +55,13 @@ private:
 
 	vector<int> strToVec(string str);
 	void initial_values_calc();
-	vector<double> gauss(vector< vector<double> > matrix, vector<double> col, int n);
+	template < typename a_type, typename y_type>
+	vector<double> gauss(a_type matrix, y_type col, int n);
+	vector<double> infinite_slau(deque<deque<double>> unknown, deque<double> known, int num, double r, double borders, double error);
 	void init_vertical();
 	void init_horizontal();
-	void update_known_temps(vector<double> &known, vector<double> &last_temps, vector<double> new_temps, int length);
+	template < typename known_type>
+	void update_known_temps(known_type &known, vector<double> &last_temps, vector<double> new_temps, int length);
 	void disconnect_points();
 	void lamp();
 };
