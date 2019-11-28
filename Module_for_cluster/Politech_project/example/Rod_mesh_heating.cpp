@@ -219,20 +219,20 @@ vector<double> RodMeshHeating::gauss(a_type coefficient_matrix, y_type equations
 	return x;
 }
 
-// Решение бесконечной системы уравнений(горизонтальные стержни) уравнений.
-vector<double> RodMeshHeating::infinite_slau(deque<deque<double>> unknown, deque<double> known, int num, double r, double borders, double error)
+// Решение бесконечной системы уравнений(горизонтальные стержни).
+vector<double> RodMeshHeating::infinite_slau(deque<deque<double>> unknown, deque<double> known, int len, double r, double borders, double error)
 {
 	vector<double> result;
-	vector<double> final_result(num);
-	int count = 0, size = num;
+	vector<double> final_result(len);
+	int count = 0, size = len;
 
-	result = gauss<deque<deque<double>>, deque<double>>(unknown, known, num);
-	while (result[num - 1] > borders + error || result[0] > borders + error)
+	result = gauss<deque<deque<double>>, deque<double>>(unknown, known, len);
+	while (result[len - 1] > borders + error || result[0] > borders + error)
 	{
 		count++;
-		num += 2;
+		len += 2;
 
-		deque<double> new_first_row(num, 0);
+		deque<double> new_first_row(len, 0);
 		new_first_row[0] = r + 1;
 		new_first_row[1] = -r;
 		unknown.push_front(new_first_row);
@@ -241,22 +241,22 @@ vector<double> RodMeshHeating::infinite_slau(deque<deque<double>> unknown, deque
 		unknown[1][0] = 2 * r + 1;
 		unknown[1].push_front(-r);
 		unknown[1].push_back(0);
-		for (size_t i = 2; i < num - 2; i++)
+		for (size_t i = 2; i < len - 2; i++)
 		{
 			unknown[i].push_front(0);
 			unknown[i].push_back(0);
 		}
-		unknown[num - 2].push_front(0);
-		unknown[num - 2][num - 2] = 2 * r + 1;
-		unknown[num - 2].push_back(-r);
+		unknown[len - 2].push_front(0);
+		unknown[len - 2][len - 2] = 2 * r + 1;
+		unknown[len - 2].push_back(-r);
 
-		deque<double> new_last_row(unknown.size() + 1, 0);
-		new_last_row[num - 2] = -r;
-		new_last_row[num - 1] = r + 1;
+		deque<double> new_last_row(len, 0);
+		new_last_row[len - 2] = -r;
+		new_last_row[len - 1] = r + 1;
 		unknown.push_back(new_last_row);
 		known.push_back(10);
 
-		result = gauss<deque<deque<double>>, deque<double>>(unknown, known, num);
+		result = gauss<deque<deque<double>>, deque<double>>(unknown, known, len);
 	}
 
 	int k = 0;
@@ -268,6 +268,7 @@ vector<double> RodMeshHeating::infinite_slau(deque<deque<double>> unknown, deque
 
 	return final_result;
 }
+
 
 
 // Инициализация данных у вертикальных стержней.

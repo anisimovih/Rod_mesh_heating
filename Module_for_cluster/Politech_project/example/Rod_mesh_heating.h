@@ -57,7 +57,7 @@ private:
 	void initial_values_calc();
 	template < typename a_type, typename y_type>
 	vector<double> gauss(a_type matrix, y_type col, int n);
-	vector<double> infinite_slau(deque<deque<double>> unknown, deque<double> known, int num, double r, double borders, double error);
+	vector<double> infinite_slau(deque<deque<double>> unknown, deque<double> known, int len, double r, double borders, double error);
 	void init_vertical();
 	void init_horizontal();
 	template < typename known_type>
