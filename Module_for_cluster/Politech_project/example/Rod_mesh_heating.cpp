@@ -22,6 +22,7 @@ RodMeshHeating::~RodMeshHeating() {
 
 map<string, Point> RodMeshHeating::getPoints() {
 	result.clear();
+	cout << endl << v_len / 20 << endl;
 
 	for (int j = 0; j < v_num; j++)
 	{
@@ -56,6 +57,7 @@ void RodMeshHeating::nextStep() {
 	{
 		v_new_temps[j] = gauss<vector<vector<double>>, vector<double>>(v_unknown[j], v_known[j], v_len);
 	}
+
 	// Перисвоение новых значений горизонтальным стержням(в точках пересечения).
 	for (int j = 0; j < h_num; j++)
 	{
@@ -63,7 +65,7 @@ void RodMeshHeating::nextStep() {
 		{
 			if (intersect_2[k + j * v_num][0] != -1)
 			{
-				h_known[j][intersect_2[k + j * v_num][1]] = v_new_temps[k][intersect_2[k + j * v_num][0]];
+				h_known[j][intersect_2[k + j * v_num][1] + extend[j]] = v_new_temps[k][intersect_2[k + j * v_num][0]];
 			}
 		}
 	}
@@ -71,9 +73,9 @@ void RodMeshHeating::nextStep() {
 	// Рассчет температур горизонтальных стержней.
 	for (int j = 0; j < h_num; j++)
 	{
-		//h_new_temps[j] = gauss<deque<deque<double>>, deque<double>>(h_unknown[j], h_known[j], h_len);
-		h_new_temps[j] = infinite_slau(h_unknown[j], h_known[j], h_len, r_h, Ts, T_error);
+		infinite_slau(h_new_temps[j], h_unknown[j], h_known[j], h_last_temps[j], r_h, T_error, extend[j], extend_len[j]);
 	}
+
 	// Перисвоение новых значений вертикальным стержням(в точках пересечения).
 	for (int j = 0; j < h_num; j++)
 	{
@@ -81,7 +83,7 @@ void RodMeshHeating::nextStep() {
 		{
 			if (intersect_2[k + j * v_num][0] != -1)
 			{
-				v_new_temps[k][intersect_2[k + j * v_num][0]] = h_new_temps[j][intersect_2[k + j * v_num][1]];
+				v_new_temps[k][intersect_2[k + j * v_num][0]] = h_new_temps[j][intersect_2[k + j * v_num][1] + extend[j]];
 			}
 		}
 	}
@@ -91,13 +93,13 @@ void RodMeshHeating::nextStep() {
 	// Запись найденных значений вертикальных стержней в матрицу.
 	for (int j = 0; j < v_num; j++)
 	{
-		update_known_temps<vector<double>>(v_known[j], v_last_temps[j], v_new_temps[j], v_len);
+		update_known_temps<vector<double>, vector<double>>(v_known[j], v_last_temps[j], v_new_temps[j], v_len);
 	}
 
 	// Запись найденных значений горизонтальных стержней в матрицу.
 	for (int j = 0; j < h_num; j++)
 	{
-		update_known_temps<deque<double>>(h_known[j], h_last_temps[j], h_new_temps[j], h_len);
+		update_known_temps<deque<double>, deque<double>>(h_known[j], h_last_temps[j], h_new_temps[j], extend_len[j]);
 	}
 
 	t += dt;
@@ -127,7 +129,6 @@ void RodMeshHeating::parseParam(map<string, string> mapParam) {
 	absorption_coefficient_v = stod(mapParam["Коэффициент поглощения вертикальных стержней"]);
 	absorption_coefficient_h = stod(mapParam["Коэффициент поглощения горизонтальных стержней"]);
 	non_intersecting_points = strToVec(mapParam["Точки отсутствия пересечений"]);
-
 
 	initial_values_calc();
 }
@@ -172,11 +173,14 @@ void RodMeshHeating::initial_values_calc()
 		h_intersect.push_back(int(v_len / (h_num + 1)  * i) - 1);
 	}
 
+	init < vector<double>, vector<vector<double> >> (v_unknown, v_last_temps, v_known, v_new_temps, v_num, v_len, r_v, true);
+	init < deque<double>, deque<deque<double> >> (h_unknown, h_last_temps, h_known, h_new_temps, h_num, h_len, r_h);
 
-	init_vertical();
-	init_horizontal();
-	vector< vector<int> > intersect_2_new(v_num * h_num, vector<int>(2)); // Пересечения стержней
-	intersect_2 = intersect_2_new;
+	extend_len.assign(h_num, h_len);
+	extend.assign(h_num, 0);
+
+	intersect_2.assign(v_num * h_num, vector<int>(2));
+
 	disconnect_points();
 }
 
@@ -219,117 +223,81 @@ vector<double> RodMeshHeating::gauss(a_type coefficient_matrix, y_type equations
 	return x;
 }
 
+
 // Решение бесконечной системы уравнений(горизонтальные стержни).
-vector<double> RodMeshHeating::infinite_slau(deque<deque<double>> unknown, deque<double> known, int len, double r, double borders, double error)
+void RodMeshHeating::infinite_slau(vector<double> &h_new_temps, deque<deque<double>> &unknown, deque<double> &known, deque<double> &last, double r, double error, int &extended, int &extended_len)
 {
-	vector<double> result;
-	vector<double> final_result(len);
-	int count = 0, size = len;
+	int size = extended_len;
 
-	result = gauss<deque<deque<double>>, deque<double>>(unknown, known, len);
-	while (result[len - 1] > borders + error || result[0] > borders + error)
+	h_new_temps = gauss<deque<deque<double>>, deque<double>>(unknown, known, extended_len);
+	while (h_new_temps[extended_len - 1] > Ts + error || h_new_temps[0] > Ts + error)
 	{
-		count++;
-		len += 2;
+		extended++;
+		extended_len += 2;
 
-		deque<double> new_first_row(len, 0);
+		deque<double> new_first_row(extended_len, 0);
 		new_first_row[0] = r + 1;
 		new_first_row[1] = -r;
 		unknown.push_front(new_first_row);
 		known.push_front(10);
+		last.push_front(10);
 
 		unknown[1][0] = 2 * r + 1;
 		unknown[1].push_front(-r);
 		unknown[1].push_back(0);
-		for (size_t i = 2; i < len - 2; i++)
+		for (size_t i = 2; i < extended_len - 2; i++)
 		{
 			unknown[i].push_front(0);
 			unknown[i].push_back(0);
 		}
-		unknown[len - 2].push_front(0);
-		unknown[len - 2][len - 2] = 2 * r + 1;
-		unknown[len - 2].push_back(-r);
+		unknown[extended_len - 2].push_front(0);
+		unknown[extended_len - 2][extended_len - 2] = 2 * r + 1;
+		unknown[extended_len - 2].push_back(-r);
 
-		deque<double> new_last_row(len, 0);
-		new_last_row[len - 2] = -r;
-		new_last_row[len - 1] = r + 1;
+		deque<double> new_last_row(extended_len, 0);
+		new_last_row[extended_len - 2] = -r;
+		new_last_row[extended_len - 1] = r + 1;
 		unknown.push_back(new_last_row);
 		known.push_back(10);
+		last.push_back(10);
 
-		result = gauss<deque<deque<double>>, deque<double>>(unknown, known, len);
-	}
-
-	int k = 0;
-	for (int i = count; i < count + size; i++)
-	{
-		final_result[k] = result[i];
-		k++;
-	}
-
-	return final_result;
-}
-
-
-
-// Инициализация данных у вертикальных стержней.
-void RodMeshHeating::init_vertical()
-{
-	vector<deque<double>> abs;
-	deque<double> abc;
-	vector< vector<vector<double> > > v_unknown_new(v_num, vector< vector<double> >(v_len, vector<double>(v_len, 0)));  // Матрицы горизонтальных стержней
-	vector< vector<double> > v_last_temps_new(v_num, vector<double>(v_len, Ts));  // Предыдущие температуры в точках горизонтальных стержней
-	vector< vector<double> > v_known_new(v_num, vector<double>(v_len, Ts));  // Известные данные горизонтальных стержней
-	vector< vector<double> > v_new_temps_new(v_num, vector<double>(v_len));  // Температуры в точках горизонтальных стержней
-
-	v_unknown = v_unknown_new;
-	v_last_temps = v_last_temps_new;
-	v_known = v_known_new;
-	v_new_temps = v_new_temps_new;
-
-	for (size_t i = 0; i < v_new_temps.size(); i++)
-	{
-		for (size_t j = 0; j < v_new_temps[0].size(); j++)
-		{
-			if (j != 0)
-				v_unknown[i][j][j - 1] = -r_v;
-			v_unknown[i][j][j] = r_v * 2 + 1;
-			if (j != v_new_temps[0].size() - 1)
-				v_unknown[i][j][j + 1] = -r_v;
-		}
-
-		v_known[i][0] += Tcu * r_v; // Добавляем граничные условия
-		v_known[i][v_known[0].size() - 1] += Tcd * r_v; // Добавляем граничные условия
+		h_new_temps = gauss<deque<deque<double>>, deque<double>>(unknown, known, extended_len);
 	}
 }
 
 
-// Инициализация данных у горизонтальных стержней.
-void RodMeshHeating::init_horizontal()
+//  Инициализация уравнений.
+template < typename T_1, typename T_2>
+void RodMeshHeating::init(vector< T_2 > &unknown, vector< T_1 > &last_temps, vector< T_1 > &known, vector< vector<double> > &new_temps, int num, int len, double r, bool vertical)
 {
-	vector< deque<deque<double> > > h_unknown_new(h_num, deque< deque<double> >(h_len, deque<double>(h_len, 0)));  // Матрицы горизонтальных стержней
-	vector< vector<double> > h_last_temps_new(h_num, vector<double>(h_len, Ts));  // Предыдущие температуры в точках горизонтальных стержней
-	vector< deque<double> > h_known_new(h_num, deque<double>(h_len, Ts));  // Известные данные горизонтальных стержней
-	vector< vector<double> > h_new_temps_new(h_num, vector<double>(h_len));  // Температуры в точках горизонтальных стержней
+	unknown.assign(num, T_2(len, T_1(len, 0)));  // Матрицы горизонтальных стержней
+	last_temps.assign(num, T_1(len, Ts));  // Предыдущие температуры в точках горизонтальных стержней
+	known.assign(num, T_1(len, Ts));  // Известные данные горизонтальных стержней
+	new_temps.assign(num, vector<double>(len));  // Температуры в точках горизонтальных стержней
 
-	h_unknown = h_unknown_new;
-	h_last_temps = h_last_temps_new;
-	h_known = h_known_new;
-	h_new_temps = h_new_temps_new;
 
-	for (size_t i = 0; i < h_new_temps.size(); i++)
+	for (size_t i = 0; i < new_temps.size(); i++)
 	{
-		for (size_t j = 0; j < h_new_temps[0].size(); j++)
+		for (size_t j = 0; j < new_temps[0].size(); j++)
 		{
 			if (j != 0)
-				h_unknown[i][j][j - 1] = -r_h;
-			h_unknown[i][j][j] = r_h * 2 + 1;
-			if (j != h_new_temps[0].size() - 1)
-				h_unknown[i][j][j + 1] = -r_h;
+				unknown[i][j][j - 1] = -r;
+			unknown[i][j][j] = r * 2 + 1;
+			if (j != new_temps[0].size() - 1)
+				unknown[i][j][j + 1] = -r;
 		}
 
-		// Т.к. у боковых точек только 1 соседняя
-		h_unknown[i][0][0] = r_h + 1;
-		h_unknown[i][h_new_temps[0].size() - 1][h_new_temps[0].size() - 1] = r_h + 1;
+		if (vertical == false)
+			// Т.к. у боковых точек только 1 соседняя
+		{
+			unknown[i][0][0] = r + 1;
+			unknown[i][new_temps[0].size() - 1][new_temps[0].size() - 1] = r + 1;
+		}
+		else // Добавляем граничные условия
+		{
+			known[i][0] += Tcu * r;
+			known[i][known[0].size() - 1] += Tcd * r;
+		}
 	}
 }
 
@@ -337,9 +305,9 @@ void RodMeshHeating::init_horizontal()
 // Вывод картинки в консоль.
 void RodMeshHeating::print_picture()
 {
-	for (size_t i = 0; i < v_new_temps[0].size(); i++) // столбцы
+	for (size_t i = 0; i < v_len; i++) // столбцы
 	{
-		for (size_t j = 0; j < h_new_temps[0].size(); j++)  // строки
+		for (size_t j = 0; j < h_len; j++)  // строки
 		{
 			bool printed = false;
 			for (size_t k = 0; k < v_intersect.size(); k++)
@@ -357,7 +325,7 @@ void RodMeshHeating::print_picture()
 				{
 					if (i == h_intersect[k])
 					{
-						cout << setw(10) << h_new_temps[k][j];
+						cout << setw(10) << h_new_temps[k][j + extend[k]];
 						printed = true;
 						break;
 					}
@@ -373,8 +341,8 @@ void RodMeshHeating::print_picture()
 
 
 // Обновление полученных температур.
-template < typename known_type>
-void RodMeshHeating::update_known_temps(known_type &known, vector<double> &last_temps, vector<double> new_temps, int length)
+template < typename known_type, typename known_type_2>
+void RodMeshHeating::update_known_temps(known_type &known, known_type_2 &last_temps, vector<double> new_temps, int length)
 {
 	for (int i = 0; i < length; i++)
 	{
@@ -415,16 +383,17 @@ void RodMeshHeating::disconnect_points()
 }
 
 
+// Нагрев лампой.
 void RodMeshHeating::lamp()
 {
 	double dT = Lp / (2 * 3.14 * 3.14 * radius_v * radius_v * radius_v * density_v * dX * dt * specific_heat_v) * absorption_coefficient_v;
 
 	for (int i = 0; i < h_num; i++)
 	{
-		for (int j = 0; j < h_len; j++)
+		for (int j = 0; j < extend_len[i]; j++)
 		{
-			double x = abs(j - (h_len - 1) / 2);
-			double y = abs(h_intersect[i] - (h_len - 1) / 2);
+			double x = abs(j - (extend_len[i] - 1) / 2);
+			double y = abs(h_intersect[i] - (extend_len[i] - 1) / 2);
 			double length = sqrt(x * x + y * y);
 			if (length != 0)
 				h_new_temps[i][j] += dT / length;

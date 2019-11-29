@@ -44,9 +44,14 @@ private:
 	vector<int> h_intersect{}; // Координаты горизонтальных сержней
 	vector< vector<int> > intersect_2; // Координаты пересеченйи стержней
 	vector< deque<deque<double> > > h_unknown;  // Матрицы горизонтальных стержней
-	vector< vector<double> > h_last_temps;  // Предыдущие температуры в точках горизонтальных стержней
+	vector< deque<double> > h_last_temps;  // Предыдущие температуры в точках горизонтальных стержней
 	vector< deque<double> > h_known;  // Известные данные горизонтальных стержней
 	vector< vector<double> > h_new_temps;  // Новые значения температур в точках горизонтальных стержней
+
+	vector<int> extend_len; // Новые длины стержней.
+	vector<int> extend;  // Удлинение стержней
+
+	
 	vector< vector<vector<double> > > v_unknown;  // Матрицы горизонтальных стержней
 	vector< vector<double> > v_last_temps;  // Предыдущие температуры в точках горизонтальных стержней
 	vector< vector<double> > v_known;  // Известные данные горизонтальных стержней
@@ -57,11 +62,11 @@ private:
 	void initial_values_calc();
 	template < typename a_type, typename y_type>
 	vector<double> gauss(a_type matrix, y_type col, int n);
-	vector<double> infinite_slau(deque<deque<double>> unknown, deque<double> known, int len, double r, double borders, double error);
-	void init_vertical();
-	void init_horizontal();
-	template < typename known_type>
-	void update_known_temps(known_type &known, vector<double> &last_temps, vector<double> new_temps, int length);
+	void infinite_slau(vector<double> &h_new_temps, deque<deque<double>> &unknown, deque<double> &known, deque<double> &last, double r, double error, int &extended, int &extended_len);
+	template < typename T_1, typename T_2>
+	void init(vector< T_2 > &unknown, vector< T_1 > &last_temps, vector< T_1 > &known, vector< vector<double> > &new_temps, int num, int len, double r, bool vertical = false);
+	template < typename known_type, typename known_type_2>
+	void update_known_temps(known_type &known, known_type_2 &last_temps, vector<double> new_temps, int length);
 	void disconnect_points();
 	void lamp();
 };

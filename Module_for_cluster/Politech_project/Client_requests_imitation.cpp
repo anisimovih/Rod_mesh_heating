@@ -1,9 +1,13 @@
 ﻿#include "./example/Rod_mesh_heating.h"
 #include <iostream>
+#include <cstdio>
+#include <ctime>
+using namespace std;
+RodMeshHeating *test = new RodMeshHeating;
+void nextStep(int number);
 
 int main()
 {
-	RodMeshHeating *test = new RodMeshHeating;
 	map <string, string> params_map = { { "dx", "0.05" },
 										{ "dt", "1" },
 										{ "Длина вертикальных стержней", "1" },
@@ -30,11 +34,23 @@ int main()
 										{"Коэффициент поглощения горизонтальных стержней", "0.45"}
 	};
 	test->parseParam(params_map);
-	for (int i = 0; i < 70; i++)
-	{
-		test->nextStep();
-	}
+	nextStep(5);
 	test->print_picture();  // Отрисовка картинки в консоли.
 	test->getPoints();
 	test->getTime();
+}
+
+
+void nextStep(int number)
+{
+	std::clock_t start;
+	start = std::clock();
+	for (int i = 0; i < number; i++)
+	{
+		test->nextStep();
+		system("cls");
+		cout << int(100.0 / number * i + 1) << "%" << endl;
+	}
+	system("cls");
+	cout << "Time: " << (std::clock() - start) / (double)CLOCKS_PER_SEC << endl;
 }
