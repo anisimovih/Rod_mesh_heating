@@ -21,7 +21,7 @@ for i in range(0, 60):
     my_cmap = cm.coolwarm
     my_cmap.set_under('green', 0)
     ax.plot_surface(X, Y, Z, cmap=my_cmap, linewidth=0, vmin=0.2)
-    plt.title('Анисимов')
+    plt.title('Анисимов (%s сек.)' % i)
     ax.set_zlabel('температура')
     ax.set_xlabel('x')
     ax.set_ylabel('y')

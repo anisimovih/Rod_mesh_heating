@@ -22,7 +22,6 @@ RodMeshHeating::~RodMeshHeating() {
 
 map<string, Point> RodMeshHeating::getPoints() {
 	result.clear();
-	cout << endl << v_len / 20 << endl;
 
 	for (int j = 0; j < v_num; j++)
 	{
